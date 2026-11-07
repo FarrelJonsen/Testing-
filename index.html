@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gudang Resi – Warehouse Management</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+  <script src="assets/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>📦 Gudang Resi</h1>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="scan">Scan Resi</button>
+      <button class="tab" data-tab="resi">Daftar Resi</button>
+      <button class="tab" data-tab="stok">Stok Barang</button>
+      <button class="tab" data-tab="data">Data</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ================= SCAN ================= -->
+    <section id="tab-scan" class="panel active">
+      <div class="mode-switch">
+        <label><input type="radio" name="mode" value="keluar" checked> <b>1. Catat Barang Keluar</b><small>Scan resi saat paket dikemas → stok berkurang</small></label>
+        <label><input type="radio" name="mode" value="kirim"> <b>2. Verifikasi Serah Kurir</b><small>Scan ulang sebelum diserahkan → cek batal/tidak</small></label>
+      </div>
+
+      <div class="card">
+        <form id="scanForm" autocomplete="off">
+          <label for="resiInput">Nomor Resi</label>
+          <div class="row">
+            <input id="resiInput" placeholder="Scan / ketik nomor resi lalu Enter" autofocus>
+            <button type="button" id="camBtn" class="btn secondary">📷 Kamera</button>
+          </div>
+          <div id="itemFields">
+            <div class="row">
+              <div class="grow">
+                <label for="productSelect">Barang</label>
+                <select id="productSelect"></select>
+              </div>
+              <div>
+                <label for="qtyInput">Jumlah</label>
+                <input id="qtyInput" type="number" min="1" value="1" class="qty">
+              </div>
+            </div>
+            <label for="noteInput">Catatan (opsional: marketplace / nama pembeli)</label>
+            <input id="noteInput" placeholder="mis. Shopee - Budi">
+          </div>
+          <button type="submit" class="btn primary block" id="submitBtn">Simpan</button>
+        </form>
+        <div id="reader" hidden></div>
+      </div>
+
+      <div id="alertBox" class="alert" hidden></div>
+
+      <div class="stats" id="todayStats"></div>
+
+      <h3>Scan terakhir</h3>
+      <div id="recentList" class="recent"></div>
+    </section>
+
+    <!-- ================= DAFTAR RESI ================= -->
+    <section id="tab-resi" class="panel">
+      <div class="filters">
+        <input id="fSearch" placeholder="Cari resi / catatan">
+        <input id="fFrom" type="date">
+        <input id="fTo" type="date">
+        <select id="fStatus">
+          <option value="">Semua status</option>
+          <option value="DIKEMAS">Dikemas</option>
+          <option value="DIKIRIM">Dikirim</option>
+          <option value="BATAL">Batal</option>
+        </select>
+        <button class="btn secondary" id="exportCsv">⬇ Export CSV</button>
+      </div>
+      <div class="stats" id="resiStats"></div>
+      <h3>Stok tersedia (setelah dikurangi barang keluar)</h3>
+      <div class="stats" id="resiStock"></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Tanggal</th><th>No. Resi</th><th>Barang</th><th>Qty</th><th>Stok Tersedia</th><th>Status</th><th>Catatan</th><th>Aksi</th></tr></thead>
+          <tbody id="resiTable"></tbody>
+        </table>
+      </div>
+      <details class="card">
+        <summary><b>Tandai banyak resi BATAL sekaligus</b></summary>
+        <p class="muted">Tempel daftar resi yang dibatalkan dari marketplace (satu per baris). Stok akan dikembalikan.</p>
+        <textarea id="bulkCancel" rows="5" placeholder="JX123...&#10;SPX456..."></textarea>
+        <button class="btn danger" id="bulkCancelBtn">Tandai Batal</button>
+      </details>
+    </section>
+
+    <!-- ================= STOK ================= -->
+    <section id="tab-stok" class="panel">
+      <div class="card">
+        <h3>Tambah / Restock Barang</h3>
+        <form id="productForm" class="row wrap">
+          <input id="pSku" placeholder="Kode/SKU" required>
+          <input id="pName" placeholder="Nama barang" required class="grow">
+          <input id="pQty" type="number" min="0" placeholder="Jumlah masuk" required class="qty">
+          <button class="btn primary">Simpan</button>
+        </form>
+        <p class="muted">Jika SKU sudah ada, jumlah akan <b>ditambahkan</b> sebagai barang masuk.</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>SKU</th><th>Nama</th><th>Total Masuk</th><th>Keluar</th><th>Batal (kembali)</th><th>Stok Tersedia</th><th></th></tr></thead>
+          <tbody id="stockTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ================= DATA ================= -->
+    <section id="tab-data" class="panel">
+      <div class="card">
+        <h3>Backup & Restore</h3>
+        <p class="muted">Data tersimpan di browser perangkat ini. Lakukan backup berkala.</p>
+        <div class="row wrap">
+          <button class="btn primary" id="backupBtn">⬇ Download Backup (JSON)</button>
+          <label class="btn secondary">⬆ Restore Backup<input type="file" id="restoreFile" accept=".json" hidden></label>
+          <button class="btn danger" id="resetBtn">Hapus Semua Data</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+</body>
+</html>
